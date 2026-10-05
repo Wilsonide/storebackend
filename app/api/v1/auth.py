@@ -117,13 +117,16 @@ async def login(
 
     # Set refresh token cookie (HTTP-only)
     refresh_token_expire_seconds = 7 * 24 * 60 * 60  # 7 days
+
     response.set_cookie(
         key="refreshToken",
         value=refresh_token,
         httponly=True,
+        secure=True,
+        samesite="none",
         max_age=refresh_token_expire_seconds,
         expires=refresh_token_expire_seconds,
-        samesite="lax",
+        path="/",
     )
 
     print(
@@ -180,13 +183,16 @@ async def refresh_token(
     )
 
     # Set same refresh token cookie
+
     response.set_cookie(
         key="refreshToken",
         value=refresh_token_cookie,
         httponly=True,
+        secure=True,
+        samesite="none",
         max_age=7 * 24 * 60 * 60,
         expires=7 * 24 * 60 * 60,
-        samesite="lax",
+        path="/",
     )
 
     return {"access_token": access_token}
@@ -208,10 +214,7 @@ async def logout(
         await session.commit()
 
     # Delete cookie on client
-    response.delete_cookie(
-        key="refreshToken",
-        samesite="lax",
-    )
+    response.delete_cookie(key="refreshToken", samesite="none", secure=True, path="/")
     return {"message": "Logged out"}
 
 

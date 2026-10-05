@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     DATABASE_URL: str
+    environment: str = "development"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
@@ -12,7 +13,7 @@ class Settings(BaseSettings):
     cloudinary_api_secret: str
     smtp_password: str
     domain: str = "http://localhost:8000"
-    frontend_url: str = "http://localhost:3000"
+    frontend_url: str
     secret_key: str = "supersecretkeythatisatleast32chars!"
     PAYSTACK_SECRET_KEY: str
     PAYSTACK_PUBLIC_KEY: str
