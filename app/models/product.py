@@ -120,12 +120,12 @@ class Product(Base):
         "Brand",
         back_populates="products",
     )
-
     images = relationship(
-        "ProductImage",
-        back_populates="product",
-        cascade="all, delete-orphan",
-    )
+    "ProductImage",
+    back_populates="product",
+    cascade="all, delete-orphan",
+    order_by="ProductImage.sort_order",
+)
 
     variants = relationship(
         "ProductVariant",

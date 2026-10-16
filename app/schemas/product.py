@@ -1,8 +1,9 @@
+
 from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.product_variant import (
     ProductVariantCreate,
@@ -23,7 +24,6 @@ class ProductBase(BaseModel):
     )
 
     category_id: int
-
     brand_id: int | None = None
 
     material: str | None = Field(
@@ -52,14 +52,60 @@ class ProductBase(BaseModel):
     )
 
     is_available: bool = True
-
     is_featured: bool = False
+
+
+class ProductImageCreate(BaseModel):
+    image_url: str = Field(
+        ...,
+        min_length=1,
+        max_length=500,
+    )
+
+    public_id: str | None = Field(
+        default=None,
+        max_length=255,
+    )
+
+    sort_order: int = Field(
+        default=0,
+        ge=0,
+    )
+
+    is_cover: bool = False
+
+
+class ProductImageResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    image_url: str
+    public_id: str | None
+    product_id: int
+    sort_order: int
+    is_cover: bool
 
 
 class ProductCreate(ProductBase):
     variants: list[ProductVariantCreate] = Field(
         default_factory=list,
     )
+
+    images: list[ProductImageCreate] = Field(
+        default_factory=list,
+        max_length=10,
+    )
+
+    @model_validator(mode="after")
+    def validate_images(self):
+        covers = [image for image in self.images if image.is_cover]
+
+        if len(covers) > 1:
+            raise ValueError(
+                "A product can have only one cover image."
+            )
+
+        return self
 
 
 class ProductUpdate(BaseModel):
@@ -69,25 +115,64 @@ class ProductUpdate(BaseModel):
         max_length=255,
     )
 
-    description: str | None = None
+    description: str | None = Field(
+        default=None,
+        min_length=1,
+    )
 
     category_id: int | None = None
-
     brand_id: int | None = None
 
-    material: str | None = None
+    material: str | None = Field(
+        default=None,
+        max_length=100,
+    )
 
-    gender: str | None = None
+    gender: str | None = Field(
+        default=None,
+        max_length=50,
+    )
 
-    warranty: str | None = None
+    warranty: str | None = Field(
+        default=None,
+        max_length=255,
+    )
 
-    cover_image: str | None = None
+    cover_image: str | None = Field(
+        default=None,
+        max_length=500,
+    )
 
-    cover_public_id: str | None = None
+    cover_public_id: str | None = Field(
+        default=None,
+        max_length=255,
+    )
 
     is_available: bool | None = None
-
     is_featured: bool | None = None
+
+    # None means do not modify the existing gallery.
+    # An empty list means remove all gallery images.
+    images: list[ProductImageCreate] | None = Field(
+        default=None,
+        max_length=10,
+    )
+
+    @model_validator(mode="after")
+    def validate_images(self):
+        if self.images is not None:
+            covers = [
+                image
+                for image in self.images
+                if image.is_cover
+            ]
+
+            if len(covers) > 1:
+                raise ValueError(
+                    "A product can have only one cover image."
+                )
+
+        return self
 
 
 class ProductResponse(ProductBase):
@@ -96,6 +181,10 @@ class ProductResponse(ProductBase):
     id: int
     created_at: datetime
     updated_at: datetime
+
+    images: list[ProductImageResponse] = Field(
+        default_factory=list,
+    )
 
     variants: list[ProductVariantResponse] = Field(
         default_factory=list,
@@ -112,6 +201,10 @@ class ProductListResponse(BaseModel):
     is_featured: bool
     category_id: int
     brand_id: int | None
+
+    images: list[ProductImageResponse] = Field(
+        default_factory=list,
+    )
 
 
 class ProductQueryParams(BaseModel):
@@ -132,11 +225,8 @@ class ProductQueryParams(BaseModel):
     )
 
     category_id: int | None = None
-
     brand_id: int | None = None
-
     featured: bool | None = None
-
     available: bool | None = True
 
     min_price: Decimal | None = Field(
@@ -164,7 +254,6 @@ class PaginatedProductResponse(BaseModel):
 
     page: int
     page_size: int
-
     total: int
     total_pages: int
 
